@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="two_robots" default="true" />
+
+
+
+<!-- launch each robot in a different namespame -->
+  <include file="$(find gp_occ_mapping)/launch/gp_oc_mapping_one_robot.launch">
+    <arg name="ns" value="J0" />
+  </include>
+
+
+
+  <group if="$(arg two_robots)">
+    <include file="$(find gp_occ_mapping)/launch/gp_oc_mapping_one_robot.launch">
+      <arg name="ns" value="J1" />
+    </include>
+  </group>
+
+</launch>

@@ -102,10 +102,16 @@ def plot_current_map():
 
 if __name__ == '__main__':
     try:
-        gp_map = gpmaps.TwoGPsMaps()
-        # plt.ion(), plt.show()
+
+        
 
         rospy.init_node('gp_occ_map', anonymous=True)
+        ns = rospy.get_param('~ns')
+        print("ns: ", ns)
+
+        gp_map = gpmaps.TwoGPsMaps(ns)
+        # plt.ion(), plt.show()
+
         gp_com_msg = gp_map.gp_com_message()
         gp_com_pub = rospy.Publisher('gp_com', OccupancyGrid, queue_size=10, latch=True)
         map_pub = rospy.Publisher('gp_map', OccupancyGrid, queue_size=10, latch=True)

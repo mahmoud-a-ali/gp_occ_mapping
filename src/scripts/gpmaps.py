@@ -30,10 +30,10 @@ def fusion_bcm(a, b, sa, sb):
 class GPRMap(pyGPs.GPR):
     def __init__(self):
         super(GPRMap, self).__init__()
-        self.width = 300
-        self.height = 300
+        self.width = 250
+        self.height = 250
         self.map_size = self.width * self.height
-        self.map_limit = [-15.0, 15.0, -15.0, 15.0]
+        self.map_limit = [-25.0, 25.0, -25.0, 25.0]
         self.map_res = (self.map_limit[1] - self.map_limit[0]) / self.width
         self.td_res = .5
 
@@ -45,10 +45,10 @@ class GPRMap(pyGPs.GPR):
         self.X, self.Y = np.meshgrid(np.linspace(self.map_limit[0], self.map_limit[1], self.width),
                                      np.linspace(self.map_limit[2], self.map_limit[3], self.height))
 
-        self.local_width = 80
-        self.local_height = 80
+        self.local_width = 60
+        self.local_height = 60
         self.local_map_size = self.local_width * self.local_height
-        self.local_map_limit = [-4.0, 4.0, -4.0, 4.0]
+        self.local_map_limit = [-6.0, 6.0, -6.0, 6.0]
         self.local_map = .5 * np.ones((self.local_width, self.local_height), dtype=np.float)
         self.local_map_var = np.ones((self.local_width, self.local_height), dtype=np.float)
         self.local_X, self.local_Y = np.meshgrid(
@@ -62,8 +62,11 @@ class GPRMap(pyGPs.GPR):
         # self.covfunc = pyGPs.cov.Matern(d=5) * pyGPs.cov.RBFard(log_ell_list=[-0.17509193324973021, -0.3272345098877003], D=2,
         # log_sigma=-1.1789938908586013)
         self.covfunc = pyGPs.cov.Matern(d=7)
+        
+
+        #### scan range 
         self.scan = None
-        self.max_range = 5.66
+        self.max_range = 8 #5.66
         self.scan_skip = 10
         self.hyp_learned = False
         self.use_offline_hyp = True
@@ -143,7 +146,10 @@ class GPRMap(pyGPs.GPR):
                         if self.first_update:
                             self.local_map_var[i, j] *= 1000
                             self.first_update = False
-
+                        ## to solve error appeared first itme to run
+                        ix = int( np.floor(ix) )
+                        iy = int( np.floor(iy) )
+                        # print("x0, x1: ", i + ix, j + iy)
                         z, sz = fusion_bcm(self.local_map[i, j], self.map[i + ix, j + iy], self.local_map_var[i, j],
                                            self.map_var[i + ix, j + iy])
                         self.map[i + ix, j + iy] = copy.deepcopy(z)
@@ -236,8 +242,17 @@ class GPRMap(pyGPs.GPR):
             return
 
 
+
+
+
+
+
+
 class TwoGPsMaps():
-    def __init__(self):
+    def __init__(self, ns):
+
+        self.frame_id = ns + "world"
+
         self.occ_map = GPRMap()
         self.occ_map.covfunc = pyGPs.cov.Matern(d=3)
         self.free_map = GPRMap()
@@ -311,7 +326,7 @@ class TwoGPsMaps():
             self.expl_goal[i, :] = temp[id_nf[i], :]
 
         frontiers_msg.header.stamp = rospy.Time.now()
-        frontiers_msg.header.frame_id = "map"
+        frontiers_msg.header.frame_id = self.frame_id
 
         for i in range(self.expl_goal.shape[0]):
             frontiers_msg.poses.append(
@@ -323,7 +338,7 @@ class TwoGPsMaps():
 
         grid_msg = OccupancyGrid()
         grid_msg.header.stamp = rospy.Time.now()
-        grid_msg.header.frame_id = "map"
+        grid_msg.header.frame_id = self.frame_id
 
         grid_msg.info.resolution = self.occ_map.map_res
         grid_msg.info.width = self.occ_map.width
@@ -350,7 +365,7 @@ class TwoGPsMaps():
 
         grid_msg = OccupancyGrid()
         grid_msg.header.stamp = rospy.Time.now()
-        grid_msg.header.frame_id = "map"
+        grid_msg.header.frame_id = self.frame_id
 
         grid_msg.info.resolution = self.occ_map.map_res
         grid_msg.info.width = self.occ_map.width
@@ -371,7 +386,7 @@ class TwoGPsMaps():
         goal_msg = PoseStamped()
 
         goal_msg.header.stamp = rospy.Time.now()
-        goal_msg.header.frame_id = "map"
+        goal_msg.header.frame_id = self.frame_id
 
         if not self.expl_goal is None:
             goal_msg.pose = Pose(Point(self.expl_goal[0, 0], self.expl_goal[0, 1], 0),
